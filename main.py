@@ -18,6 +18,9 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 
 def user_list():
+    '''
+    Prints out each document id in the bankapp collection
+    '''
     translate_list = []
     print("Users: ")
     for i in get_user():
@@ -29,10 +32,17 @@ def user_list():
     return translate_list
 
 def get_user():
+    '''
+    Gets a list of documents in the bankapp collection
+    '''
     documents = db.collection("bankapp").get()
     return documents
 
 def view_ind(user):
+    '''
+    Returns the balance of a specific user
+    USER = name of the document to access
+    '''
     bank = db.collection("bankapp").document(user).get()
     if bank.exists:
         info = bank.to_dict()
@@ -41,6 +51,9 @@ def view_ind(user):
         print(f"Error, {user} does not equal {bank.id}")
 
 def view_comb():
+    '''
+    Accesses each of the document's field info and stores them into a list
+    '''
     total = 0.0
     for document in db.collection("bankapp").get():
         info = document.to_dict()
@@ -48,6 +61,9 @@ def view_comb():
     return total
 
 def add_person():
+    '''
+    Creates a new document in the bankapp collection with the balance field
+    '''
     user = input("Person's Name: ")
     balance = float(input("Balance: "))
 
@@ -65,6 +81,10 @@ def add_person():
     log_data(f"{user} added to database")
 
 def remove_person(user):
+    '''
+    Removes a document in the bankapp collection
+    USER = specifies which document to access
+    '''
     result = db.collection("bankapp").document(user).get()
     if not result.exists:
         print("User does not exist.")
@@ -75,6 +95,11 @@ def remove_person(user):
         log_data(f"{user} added to database")
 
 def withdraw(user, w_amount):
+    '''
+    Accesses a user's balance field and subtracts the amount by w_amount
+    USER = specifies which document to access
+    W_AMOUNT = amount to subtract the balance by
+    '''
     result = db.collection("bankapp").document(user).get()
     if not result.exists:
         print("Invalid Item Name")
@@ -87,6 +112,11 @@ def withdraw(user, w_amount):
     log_data(f"{w_amount} has been withdrawn from {user}'s balance.")
 
 def deposit(user, d_amount):
+    '''
+    Accesses a user's balance field and adds the amount by d_amount
+    USER = specifies which document to access
+    D_AMOUNT = amount to increase the balance by
+    '''
     result = db.collection("bankapp").document(user).get()
     if not result.exists:
         print("Invalid Item Name")
@@ -99,14 +129,29 @@ def deposit(user, d_amount):
     log_data(f"{d_amount} has been added to {user}'s balance.")
 
 def log_data(message):
+    '''
+    Adds a randomly generated document to the log collection which has fields which say what was changed
+    and what time it was changed at
+    MESSAGE = message to be written in the field
+    '''
     data = {"message" : message, "timestamp" : firestore.SERVER_TIMESTAMP}
     db.collection("log").add(data)    
 
 def split_even(bill):
+    '''
+    Divides the provided bill by 2
+    BILL = cost of bill
+    '''
     print("Amount owed by both people: ")
     print(f"${float(bill/2)}")
 
 def split_percent(bill, user1, user2):
+    '''
+    Divides the bill by a percentage of the total balance of two users
+    BILL = cost of bill
+    USER1 = document to access 
+    USER2 = document to access
+    '''
     user1_field = db.collection("bankapp").document(user1).get()
     user_1_read = user1_field.to_dict()
     user_1_total = float(user_1_read['balance'])
@@ -124,12 +169,11 @@ def split_percent(bill, user1, user2):
 
 def notify_low_balance(results, changes, read_time):
     '''
-    If the query of out of stock items changes, then display the changes.
-    ADDED = New out of stock item added to the list since registration
-    MODIFIED = An out of stock item was modified but still out of stock
-    REMOVED = An out of stock item is no longer out of stock
+    If the user is low on balance, then display the changes.
+    ADDED = New user added to the list since registration
+    MODIFIED = A user balance was modified but still too low
+    REMOVED = A user balance is no longer too low
     '''
-
     for change in changes:
         if change.type.name == "ADDED": 
             print()
@@ -143,12 +187,15 @@ def notify_low_balance(results, changes, read_time):
 def register_low_balance(warning):
     '''
     Request a query to be monitored.  If the query changes, then the
-    notify_stock_alert will be called.
+    notify_low_balance will be called.
     '''
     db.collection("bankapp").where("balance","<=",warning).on_snapshot(notify_low_balance)
 
 
 def main():
+    '''
+    Creates the menu, and an if/else chain inside a while loop to navigate the menu
+    '''
     choice = -1
     warning = float(50)
 
@@ -246,7 +293,7 @@ def main():
             print("Please enter the amount you would like to receive a low balance warning:")
             warning = float(input("> "))
             print(f"The new low balance warning will occur when balances are at or below ${warning}")
-            
+
         else:
             print("ERROR: Input is not valid")
 
